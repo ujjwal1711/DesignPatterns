@@ -19,7 +19,7 @@ class StockObservable {
 };
 
 class StockObservableImpl : public StockObservable {
-    unordered_set<NotificationAlertObserver*, bool> observerSet;
+    unordered_set<NotificationAlertObserver*> observerSet;
     int stock = 0;
     
     public:
