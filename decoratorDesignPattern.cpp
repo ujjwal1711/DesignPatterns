@@ -25,6 +25,7 @@ class Topping : public BasePizza {
 
 };
 
+// "is a" as well as "has a" relationship
 class Mushroom: public Topping {
     BasePizza* basePizza;
 public:
