@@ -7,15 +7,15 @@
 
 using namespace std;
 
-enum vehicleType {
+enum VehicleType {
     TwoWheeler,
     FourWheeler
 };
 class Vehicle {
     int vehicleNumber;
-    vehicleType vt;
+    VehicleType vt;
 public:
-    Vehicle(int vehicleNumber, vehicleType vt) {
+    Vehicle(int vehicleNumber, VehicleType vt) {
         this->vehicleNumber = vehicleNumber;
         this->vt = vt;
     }
@@ -94,6 +94,14 @@ public:
 class ParkingSpotManager {
     set<ParkingSpot*> parkingSpots;
     ParkingSpotStrategy* parkingStrategy;
+    ParkingSpot* getSpotById(int id) {
+        for (auto parkingSpot : parkingSpots) {
+            if (parkingSpot->getId() == id) {
+                return parkingSpot;
+            }
+        }
+        return nullptr;
+    }
 public:
     ParkingSpotManager(set<ParkingSpot*> parkingSpots, ParkingSpotStrategy* parkingStrategy) {
         this->parkingSpots = parkingSpots;
@@ -101,13 +109,25 @@ public:
     }
 
     // can also return ID here
-    ParkingSpot* findParkingSpace() {
-        return this->parkingStrategy->findSpot(parkingSpots);
+    int findParkingSpace() {
+        auto spot =  this->parkingStrategy->findSpot(parkingSpots);
+        if (spot == nullptr) {
+            return -1;
+        }
+        return spot->getId();
     }
-    void addVehicleToParkingSpot(Vehicle* vehicle, ParkingSpot* parkingSpot) {
+
+   void addNewParkingSpot(int id, int price) {
+        auto parkingSpot = new ParkingSpot(price, id);
+        parkingSpots.insert(parkingSpot);
+    }
+
+    void addVehicleToParkingSpot(Vehicle* vehicle, int id) {
+        auto parkingSpot = this->getSpotById(id);
         parkingSpot->parkVehicle(vehicle);
     }
-    Vehicle* removeVehicleFromParkingSpot(ParkingSpot* parkingSpot) {
+    Vehicle* removeVehicleFromParkingSpot(int id) {
+        auto parkingSpot = this->getSpotById(id);
         auto vehicle = parkingSpot->getParkedVehicle();
         parkingSpot->removeVehicle();
         return vehicle;
@@ -130,21 +150,13 @@ class ParkingSpotManagerFactory {
    TwoWheelerParkingSpotManager* twoWheelerParkingSpotManager;
    FourWheelerParkingSpotManager* fourWheelerParkingSpotManager;
 public:
-    ParkingSpotManagerFactory(int twoWheelerSpots, int twoWheelerPrice, int fourWheelerSpots, int fourWheelerPrice) {
+    ParkingSpotManagerFactory() {
         set<ParkingSpot*> twoWheelerParkingSpots;
-        for (int i = 0; i < twoWheelerSpots; ++i) {
-            ParkingSpot* ps = new ParkingSpot(twoWheelerPrice, i);
-            twoWheelerParkingSpots.insert(ps);
-        }
         set<ParkingSpot*> fourWheelerParkingSpots;
-        for (int i = 0; i < fourWheelerSpots; ++i) {
-            ParkingSpot* ps = new ParkingSpot(fourWheelerPrice, i);
-            fourWheelerParkingSpots.insert(ps);
-        }
-        this->twoWheelerParkingSpotManager = new TwoWheelerParkingSpotManager(twoWheelerParkingSpots, new ParkingSpotDefaultStrategy());
+        this->twoWheelerParkingSpotManager = new TwoWheelerParkingSpotManager(twoWheelerParkingSpots , new ParkingSpotDefaultStrategy());
         this->fourWheelerParkingSpotManager = new FourWheelerParkingSpotManager(fourWheelerParkingSpots, new ParkingSpotDefaultStrategy());
     }
-    ParkingSpotManager* getParkingSpotManager(vehicleType vt) {
+    ParkingSpotManager* getParkingSpotManager(VehicleType vt) {
         if (vt == TwoWheeler) {
             return twoWheelerParkingSpotManager;
         } else if (vt == FourWheeler) {
@@ -155,16 +167,19 @@ public:
 };
 
 int main() {
-    ParkingSpotManagerFactory* parkingSpotManagerFactory = new ParkingSpotManagerFactory(3, 100, 2, 400);
-    ParkingSpotManager* parkingSpotManager = parkingSpotManagerFactory->getParkingSpotManager(TwoWheeler);
-    auto spot = parkingSpotManager->findParkingSpace();
-    if (spot == nullptr) {
+    auto parkingSpotManagerFactory = new ParkingSpotManagerFactory();
+    ParkingSpotManager* twoWheelerParkingSpotManager = parkingSpotManagerFactory->getParkingSpotManager(TwoWheeler);
+    for (int i = 0; i < 3; ++i) {
+        twoWheelerParkingSpotManager->addNewParkingSpot(100, i);
+    }
+    auto id = twoWheelerParkingSpotManager->findParkingSpace();
+    if (id == -1) {
         cout<<"no parking spot";
     }
-    cout<<spot->getPrice()<<" "<< spot->getId()<<"\n";
+    cout<<"id is "<<id<<"\n";
     auto vehicle = new Vehicle(1234, TwoWheeler);
-    parkingSpotManager->addVehicleToParkingSpot(vehicle, spot);
-    auto vehicleRemoved =  parkingSpotManager->removeVehicleFromParkingSpot(spot);
+    twoWheelerParkingSpotManager->addVehicleToParkingSpot(vehicle, id);
+    auto vehicleRemoved =  twoWheelerParkingSpotManager->removeVehicleFromParkingSpot(id);
     vehicleRemoved->printVehicleInfo();
     return 0;
 }
